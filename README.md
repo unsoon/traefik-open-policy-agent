@@ -1,4 +1,4 @@
-# Traefik Open Policy Agent Plugin <img src="https://raw.githubusercontent.com/open-policy-agent/opa/main/logo/logo.png" align="right" width="150" height="150" style="margin: 0px 0px 10px 10px" >
+# Open Policy Agent (OPA) <img src="https://raw.githubusercontent.com/open-policy-agent/opa/main/logo/logo.png" align="right" width="150" height="150" style="margin: 0px 0px 10px 10px" >
 
 A Traefik middleware plugin that integrates with Open Policy Agent (OPA) for request authorization. This plugin allows you to implement flexible and powerful authorization policies using OPA's policy language (Rego).
 
@@ -77,17 +77,34 @@ Here's a simple example of an OPA policy that allows requests based on specific 
 ```rego
 package httpapi.authz
 
+import data.io.jwt
+
 default allow = false
 
+env := opa.runtime().env
+
 allow {
-    input.method == "GET"
-    input.path == "api/public"
+    token := input.headers["Authorization"][0]
+    prefix := substring(token, 0, 6)
+
+    prefix == "Basic "
+    basic_token := substring(token, 6, -1)
+
+    decoded := base64url.decode(basic_token)
+    [username, password] := split(decoded, ":")
+
+	username == env.USERNAME
+	crypto.md5(password) == env.HASHED_PASSWORD
 }
 
 allow {
-    input.method == "POST"
-    input.headers["authorization"][0] == "Bearer secret-token"
-}
+	token := input.headers["Authorization"][0]
+	prefix := substring(token, 0, 7)
+
+	prefix == "Bearer "
+	bearer_token := substring(token, 7, -1)
+
+	io.jwt.verify_rs256(bearer_token, env.JWKS_URL)
 ```
 
 ## Example Usage
@@ -132,7 +149,7 @@ The plugin sends the following data structure to OPA:
 {
   "input": {
     "method": "GET",
-    "path": "api/resource",
+    "path": ["api", "posts", "7903c777-cbee-4b9e-b886-d9c4ffebd8a3"],
     "headers": {
       "authorization": ["Bearer token"],
       "content-type": ["application/json"]

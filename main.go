@@ -42,7 +42,7 @@ type OpenPolicyAgent struct {
 
 type OpenPolicyAgentInput struct {
 	Host    string              `json:"host"`
-	Path    string              `json:"path"`
+	Path    []string            `json:"path"`
 	Method  string              `json:"method"`
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
@@ -108,7 +108,7 @@ func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
 	return OpenPolicyAgentPayload{
 		Input: OpenPolicyAgentInput{
 			Host:    req.Host,
-			Path:    strings.TrimPrefix(req.URL.Path, "/"),
+			Path:    strings.Split(req.URL.Path, "/")[1:],
 			Method:  req.Method,
 			Headers: req.Header,
 			Query:   req.URL.Query(),
