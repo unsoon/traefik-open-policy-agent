@@ -1,0 +1,17 @@
+displayName: Open Policy Agent
+type: middleware
+
+import: github.com/unsoon/traefik-open-policy-agent
+
+summary: "🪪 Integrates Traefik with Open Policy Agent for request authorization. This plugin allows you to implement flexible and powerful authorization policies using OPA's policy language (Rego)."
+
+iconPath: .assets/icon.png
+
+testData:
+  url: "http://opa.kube-system:8181/v1/data/httpapi/authz"
+  errorResponse:
+    statusCode: 403
+    contentType: "application/json"
+    body:
+      error: "Access denied"
+      code: 403
