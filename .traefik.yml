@@ -1,4 +1,4 @@
-displayName: Open Policy Agent
+displayName: Open Policy Agent (OPA)
 type: middleware
 
 import: github.com/unsoon/traefik-open-policy-agent
