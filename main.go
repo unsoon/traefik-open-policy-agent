@@ -76,7 +76,7 @@ func (h *OpenPolicyAgent) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if isAllowed, err := response.Result[h.allowField]; !err || !isAllowed.(bool) {
+	if isAllowed, isPresent := response.Result[h.allowField]; !isPresent || !isAllowed.(bool) {
 		h.writeErrorResponse(rw)
 		return
 	}
