@@ -1,4 +1,4 @@
-# Open Policy Agent (OPA) <img src="https://raw.githubusercontent.com/open-policy-agent/opa/main/logo/logo.png" align="right" width="150" height="150" style="margin: 0px 0px 10px 10px" >
+# Traefik Open Policy Agent Plugin <img src="https://raw.githubusercontent.com/open-policy-agent/opa/main/logo/logo.png" align="right" width="150" height="150" style="margin: 0px 0px 10px 10px" >
 
 A Traefik middleware plugin that integrates with Open Policy Agent (OPA) for request authorization. This plugin allows you to implement flexible and powerful authorization policies using OPA's policy language (Rego).
 
@@ -93,18 +93,19 @@ allow {
     decoded := base64url.decode(basic_token)
     [username, password] := split(decoded, ":")
 
-	username == env.USERNAME
-	crypto.md5(password) == env.HASHED_PASSWORD
+    username == env.USERNAME
+    crypto.md5(password) == env.HASHED_PASSWORD
 }
 
 allow {
-	token := input.headers["Authorization"][0]
-	prefix := substring(token, 0, 7)
+    token := input.headers["Authorization"][0]
+    prefix := substring(token, 0, 7)
 
-	prefix == "Bearer "
-	bearer_token := substring(token, 7, -1)
+    prefix == "Bearer "
+    bearer_token := substring(token, 7, -1)
 
-	io.jwt.verify_rs256(bearer_token, env.JWKS_URL)
+    io.jwt.verify_rs256(bearer_token, env.JWKS_URL)
+}
 ```
 
 ## Example Usage
