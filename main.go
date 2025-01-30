@@ -2,6 +2,8 @@ package traefik_open_policy_agent
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -46,6 +48,7 @@ type OpenPolicyAgentInput struct {
 	Method  string              `json:"method"`
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
+	Body    json.RawMessage     `json:"body"`
 }
 
 type OpenPolicyAgentPayload struct {
@@ -105,6 +108,12 @@ func (o *OpenPolicyAgent) writeErrorResponse(rw http.ResponseWriter) {
 }
 
 func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
+	var body json.RawMessage
+	if req.Body != nil {
+		bodyBytes, _ := ioutil.ReadAll(req.Body)
+		body = json.RawMessage(bodyBytes)
+	}
+
 	return OpenPolicyAgentPayload{
 		Input: OpenPolicyAgentInput{
 			Host:    req.Host,
@@ -112,6 +121,7 @@ func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
 			Method:  req.Method,
 			Headers: req.Header,
 			Query:   req.URL.Query(),
+			Body:    body,
 		},
 	}
 }
