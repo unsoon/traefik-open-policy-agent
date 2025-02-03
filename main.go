@@ -3,9 +3,10 @@ package traefik_open_policy_agent
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
+	"bytes"
 
 	"github.com/dghubble/sling"
 	"github.com/unsoon/traefik-open-policy-agent/helpers"
@@ -110,8 +111,9 @@ func (o *OpenPolicyAgent) writeErrorResponse(rw http.ResponseWriter) {
 func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
 	var body json.RawMessage
 	if req.Body != nil {
-		bodyBytes, _ := ioutil.ReadAll(req.Body)
+		bodyBytes, _ := io.ReadAll(req.Body)
 		body = json.RawMessage(bodyBytes)
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
 
 	return OpenPolicyAgentPayload{
