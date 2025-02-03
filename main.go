@@ -48,7 +48,7 @@ type OpenPolicyAgentInput struct {
 	Method  string              `json:"method"`
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
-	Body    json.RawMessage     `json:"body"`
+	Body    json.RawMessage     `json:"body,omitempty"`
 }
 
 type OpenPolicyAgentPayload struct {
