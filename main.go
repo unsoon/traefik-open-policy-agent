@@ -26,7 +26,7 @@ func CreateConfig() *Config {
 	return &Config{
 		AllowField: "allow",
 		ErrorResponse: ErrorResponse{
-			StatusCode:  http.StatusUnauthorized,
+			StatusCode:  http.StatusForbidden,
 			ContentType: "text/plain",
 		},
 	}
