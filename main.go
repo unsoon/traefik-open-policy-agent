@@ -2,8 +2,11 @@ package traefik_open_policy_agent
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
+	"bytes"
 
 	"github.com/dghubble/sling"
 	"github.com/unsoon/traefik-open-policy-agent/helpers"
@@ -46,6 +49,7 @@ type OpenPolicyAgentInput struct {
 	Method  string              `json:"method"`
 	Headers map[string][]string `json:"headers"`
 	Query   map[string][]string `json:"query"`
+	Body    json.RawMessage     `json:"body,omitempty"`
 }
 
 type OpenPolicyAgentPayload struct {
@@ -105,6 +109,13 @@ func (o *OpenPolicyAgent) writeErrorResponse(rw http.ResponseWriter) {
 }
 
 func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
+	var body json.RawMessage
+	if req.Body != nil {
+		bodyBytes, _ := io.ReadAll(req.Body)
+		body = json.RawMessage(bodyBytes)
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
 	return OpenPolicyAgentPayload{
 		Input: OpenPolicyAgentInput{
 			Host:    req.Host,
@@ -112,6 +123,7 @@ func requestToOpenPolicyAgentPayload(req *http.Request) OpenPolicyAgentPayload {
 			Method:  req.Method,
 			Headers: req.Header,
 			Query:   req.URL.Query(),
+			Body:    body,
 		},
 	}
 }
