@@ -149,8 +149,8 @@ The plugin sends the following data structure to OPA:
 ```json
 {
   "input": {
-    "method": "GET",
-    "path": ["api", "posts", "7903c777-cbee-4b9e-b886-d9c4ffebd8a3"],
+    "method": "POST",
+    "path": ["api", "posts"],
     "headers": {
       "authorization": ["Bearer token"],
       "content-type": ["application/json"]
@@ -158,10 +158,59 @@ The plugin sends the following data structure to OPA:
     "query": {
       "filter": ["active"],
       "sort": ["desc"]
+    },
+    "body": {
+      "title": "New Post",
+      "author": "john.doe",
+      "content": "Hello World!"
     }
   }
 }
 ```
+
+### Body-Based Authorization Example
+
+Here's an example of using request body content for authorization decisions:
+
+```rego
+package httpapi.authz
+
+default allow = false
+
+# Allow users to modify only their own posts
+allow {
+    # Check if this is a POST or PUT request
+    input.method in ["POST", "PUT"]
+
+    # Extract user from JWT token
+    token := input.headers["Authorization"][0]
+    startswith(token, "Bearer ")
+    jwt := substring(token, 7, -1)
+    [_, payload, _] := io.jwt.decode(jwt)
+    username := payload.sub
+
+    # Verify the author in request body matches the authenticated user
+    crypto.hmac.equal(input.body.author, username)
+}
+```
+
+Configure the middleware to use this policy:
+
+```yaml
+http:
+  middlewares:
+    author-check:
+      plugin:
+        open-policy-agent:
+          url: "http://opa.kube-system:8181/v1/data/httpapi/authz"
+          errorResponse:
+            statusCode: 403
+            contentType: "application/json"
+            body:
+              error: "You can only create/modify your own posts"
+```
+
+This policy ensures users can only create or modify posts where they are the author.
 
 ## License
 
