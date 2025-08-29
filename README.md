@@ -24,7 +24,7 @@ experimental:
   plugins:
     open-policy-agent:
       moduleName: "github.com/unsoon/traefik-open-policy-agent"
-      version: "v1.0.0"
+      version: "v1.2.1"
 ```
 
 ### Dynamic Configuration
@@ -83,26 +83,26 @@ default allow = false
 
 env := opa.runtime().env
 
-allow {
-    token := input.headers["Authorization"][0]
-    prefix := substring(token, 0, 6)
+allow if {
+    [token] := input.headers["Authorization"]
+    substring(token, 0, 6, prefix)
 
     prefix == "Basic "
-    basic_token := substring(token, 6, -1)
+    substring(token, 6, -1, basic_token)
 
-    decoded := base64url.decode(basic_token)
-    [username, password] := split(decoded, ":")
+    base64url.decode(basic_token, decoded)
+    split(decoded, ":", [username, password])
 
-    username == env.USERNAME
-    crypto.md5(password) == env.HASHED_PASSWORD
+    crypto.hmac.equal(username, env.USERNAME)
+    crypto.hmac.equal(crypto.md5(password), env.HASHED_PASSWORD)
 }
 
-allow {
-    token := input.headers["Authorization"][0]
-    prefix := substring(token, 0, 7)
+allow if {
+    [token] := input.headers["Authorization"]
+    substring(token, 0, 7, prefix)
 
     prefix == "Bearer "
-    bearer_token := substring(token, 7, -1)
+    substring(token, 7, -1, bearer_token)
 
     io.jwt.verify_rs256(bearer_token, env.JWKS_URL)
 }
@@ -131,7 +131,7 @@ http:
       plugin:
         open-policy-agent:
           url: "http://opa.kube-system:8181/v1/data/httpapi/authz"
-          allowField: "allowed"
+          allowField: "allow"
           errorResponse:
             statusCode: 401
             contentType: "application/json"
@@ -175,22 +175,40 @@ Here's an example of using request body content for authorization decisions:
 ```rego
 package httpapi.authz
 
+# Default deny
 default allow = false
 
 # Allow users to modify only their own posts
-allow {
+allow if {
     # Check if this is a POST or PUT request
     input.method in ["POST", "PUT"]
 
     # Extract user from JWT token
-    token := input.headers["Authorization"][0]
+    [token] := input.headers["Authorization"]
+    
+    # Check if the token is a Bearer token
     startswith(token, "Bearer ")
-    jwt := substring(token, 7, -1)
-    [_, payload, _] := io.jwt.decode(jwt)
+
+    # Extract the JWT token
+    substring(token, 7, -1, jwt)
+
+    # Decode the JWT token
+    io.jwt.decode(jwt, [_, payload, _])
+
+    # Extract the username from the JWT token
     username := payload.sub
 
-    # Verify the author in request body matches the authenticated user
-    crypto.hmac.equal(input.body.author, username)
+    # Verify the username is not empty
+    username
+
+    # Extract the author from the request body
+    author := input.body.author
+
+    # Verify the author is not empty
+    author
+
+    # Verify the author in request body matches the authenticated user's username
+    crypto.hmac.equal(author, username)
 }
 ```
 
